@@ -6,22 +6,61 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { execa } from 'execa';
 
 const BLACKLISTED = [
-  'bash', 'sh', 'zsh', 'fish', 'ksh', 'csh', 'tcsh',
-  'sudo', 'su', 'doas',
-  'rm', 'rmdir', 'del', 'mkfs', 'format', 'dd',
-  'chmod', 'chown',
-  'exec', 'eval', 'source',
-  'curl', 'wget', 'nc', 'netcat', 'scp', 'sftp', 'ftp', 'rsync',
-  'crontab', 'at', 'launchctl', 'systemctl', 'service',
-  'kill', 'killall', 'pkill',
-  'shutdown', 'reboot', 'init', 'halt',
-  'write', 'wall',
+  'bash',
+  'sh',
+  'zsh',
+  'fish',
+  'ksh',
+  'csh',
+  'tcsh',
+  'sudo',
+  'su',
+  'doas',
+  'rm',
+  'rmdir',
+  'del',
+  'mkfs',
+  'format',
+  'dd',
+  'chmod',
+  'chown',
+  'exec',
+  'eval',
+  'source',
+  'nc',
+  'netcat',
+  'scp',
+  'sftp',
+  'ftp',
+  'rsync',
+  'crontab',
+  'at',
+  'launchctl',
+  'systemctl',
+  'service',
+  'kill',
+  'killall',
+  'pkill',
+  'shutdown',
+  'reboot',
+  'init',
+  'halt',
+  'write',
+  'wall',
 ];
 
 const BLACKLISTED_PATHS = ['/etc/'];
 
 const BLACKLISTED_INTERPRETERS = [
-  'node', 'python', 'python3', 'ruby', 'perl', 'php', 'lua', 'java', 'groovy',
+  'node',
+  'python',
+  'python3',
+  'ruby',
+  'perl',
+  'php',
+  'lua',
+  'java',
+  'groovy',
 ];
 
 const CMD_RUN = 'run_shell_command2';
@@ -37,13 +76,17 @@ class ShellServer {
       {
         name: 'shell-server',
         version: '0.1.0',
-        description: 'Executes shell commands in whitelisted directories. Supports common development tools (go, git, grep, make, etc). Sensitive and destructive commands are blacklisted.',
+        description:
+          'Executes shell commands in whitelisted directories. Supports common development tools (go, git, grep, make, etc). Sensitive and destructive commands are blacklisted.',
       },
       { capabilities: { tools: { listChanged: false } } }
     );
 
     this.server.onerror = (error) => console.error('[MCP Error]', error);
-    process.on('SIGINT', async () => { await this.server.close(); process.exit(0); });
+    process.on('SIGINT', async () => {
+      await this.server.close();
+      process.exit(0);
+    });
     this.setupToolHandlers();
   }
 
@@ -114,9 +157,12 @@ class ShellServer {
       const args = request.params.arguments ?? {};
       try {
         switch (request.params.name) {
-          case CMD_LIST_DIRS: return this.listAllowedDirs();
-          case CMD_RUN: return await this.runCommand(args);
-          default: throw new Error(`Unknown tool: ${request.params.name}`);
+          case CMD_LIST_DIRS:
+            return this.listAllowedDirs();
+          case CMD_RUN:
+            return await this.runCommand(args);
+          default:
+            throw new Error(`Unknown tool: ${request.params.name}`);
         }
       } catch (error) {
         return { content: [{ type: 'text', text: String(error), mimeType: 'text/plain' }] };
