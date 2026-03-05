@@ -194,10 +194,11 @@ async function main() {
   if (args.includes('config')) {
     const debug = args.includes('--debug');
     updateConfig(debug);
+    return;
   }
 
-  // remaining args after 'config' check are allowed directories
-  const allowedDirs = args.filter((a) => a !== 'config' && a !== '--debug');
+  // remaining args are allowed directories
+  const allowedDirs = args;
 
   // start server
   const server = new ShellServer(allowedDirs);
