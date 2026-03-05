@@ -49,15 +49,20 @@ const BLACKLISTED_COMMANDS = new Set([
   'mkfs', // Duplicate of above, filesystem creation - Data destruction risk
 ]);
 
-// Example validation function
 function validateCommand(baseCommand: string): boolean {
   return !BLACKLISTED_COMMANDS.has(baseCommand);
 }
 
+function validateCwd(cwd: string, allowedDirs: string[]): boolean {
+  return allowedDirs.some((dir) => cwd === dir || cwd.startsWith(dir + '/'));
+}
+
 class ShellServer {
   private server: Server;
+  private allowedDirs: string[];
 
-  constructor() {
+  constructor(allowedDirs: string[]) {
+    this.allowedDirs = allowedDirs;
     this.server = new Server(
       {
         name: 'shell-server',
@@ -90,24 +95,55 @@ class ShellServer {
       tools: [
         {
           name: 'run_command',
-          description: 'Run a shell command',
+          description:
+            'Run a shell command in a specific directory. ' +
+            'Use list_allowed_directories first to get the list of valid values for cwd.',
           inputSchema: {
             type: 'object',
             properties: {
               command: { type: 'string' },
+              cwd: {
+                type: 'string',
+                description: 'Working directory for the command. Must be one of the allowed directories returned by list_allowed_directories.',
+              },
             },
+            required: ['command', 'cwd'],
+          },
+        },
+        {
+          name: 'list_allowed_directories',
+          description: 'Returns the list of directories where commands are allowed to run.',
+          inputSchema: {
+            type: 'object',
+            properties: {},
           },
         },
       ],
     }));
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+      if (request.params.name === 'list_allowed_directories') {
+        return {
+          content: [{ type: 'text', text: this.allowedDirs.join('\n'), mimeType: 'text/plain' }],
+        };
+      }
+
       if (request.params.name !== 'run_command') {
         throw new Error(`Unknown tool: ${request.params.name}`);
       }
 
       const command = request.params.arguments?.command as string;
+      const cwd = request.params.arguments?.cwd as string;
+
       try {
+        if (!cwd) {
+          throw new Error('cwd is required');
+        }
+
+        if (!validateCwd(cwd, this.allowedDirs)) {
+          throw new Error(`Directory not allowed: ${cwd}`);
+        }
+
         const baseCommand = command.trim().split(/\s+/)[0];
         if (!(await commandExists(baseCommand))) {
           throw new Error(`Command not found: ${baseCommand}`);
@@ -120,6 +156,7 @@ class ShellServer {
         const { stdout, stderr } = await execa(command, [], {
           shell: true,
           env: process.env,
+          cwd,
         });
 
         return {
@@ -159,8 +196,11 @@ async function main() {
     updateConfig(debug);
   }
 
+  // remaining args after 'config' check are allowed directories
+  const allowedDirs = args.filter((a) => a !== 'config' && a !== '--debug');
+
   // start server
-  const server = new ShellServer();
+  const server = new ShellServer(allowedDirs);
   await server.run();
 }
 
