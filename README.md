@@ -2,6 +2,12 @@
 
 MCP server that executes shell commands in whitelisted directories.
 
+## Warning
+
+Very unsafe, trivial to bypass all "security" in this repo.
+Use containers with bind mounts: *link_tbd*.
+This is a POC/study project.
+
 ## Setup
 
 Add to `claude_desktop_config.json`:
@@ -28,4 +34,6 @@ Add to `claude_desktop_config.json`:
 
 ## Security
 
-Destructive and sensitive commands are blacklisted. Allowed directories are passed at startup and enforced at runtime.
+Destructive and sensitive commands are blacklisted.
+Allowed directories are passed at startup and enforced at runtime.
+None of this really matters though, use containers.
